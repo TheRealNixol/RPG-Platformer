@@ -12,6 +12,7 @@ public class PlayerController : MonoBehaviour
     public bool attacking = false;
     public bool blocking = false;
     public bool spellcasting = false;
+    public bool dead = false;
     public float groundCheckRadius;
     public LayerMask whatIsGround;
     public bool grounded;
@@ -22,79 +23,113 @@ public class PlayerController : MonoBehaviour
     public bool finishedAttack = false;
     public bool finishedBlock = false;
 
-    private Animator anim;
+    public GameObject collider;
+    public GameObject self;
+    public GameObject pause;
+    private PauseMenu pause_script;
+    public GameObject victory;
+    private Victory victory_script;
+    public GameObject lose;
+    private Lose lose_script;
+
+    public Animator anim;
     // Start is called before the first frame update
     void Start()
     {
         anim = GetComponent<Animator>();
         rb = GetComponent<Rigidbody2D>();
+        pause_script = pause.GetComponent<PauseMenu>();
+        victory_script = victory.GetComponent<Victory>();
+        lose_script = lose.GetComponent<Lose>();
+
     }
-    private void CheckInput() 
+    private void CheckInput()
     {
-        movementInputDirection = Input.GetAxisRaw("Horizontal");
-        if (Input.GetButtonDown("Jump") && attacking == false && blocking == false) 
+        if (pause_script.GameIsPaused == false && victory_script.victory == false && lose_script.lose == false) 
         {
-            if (canJump) 
+            if (!dead)
             {
-                jumping = true;
-            }    
-        }
-        if (Input.GetButtonDown("Fire1") && grounded == true) 
-        {
-            if (canAttack) {
-                attacking = true;
+                movementInputDirection = Input.GetAxisRaw("Horizontal");
+                if (Input.GetButtonDown("Jump") && attacking == false && blocking == false)
+                {
+                    if (canJump)
+                    {
+                        jumping = true;
+                    }
+                }
+                if (Input.GetButtonDown("Fire1") && grounded == true)
+                {
+                    if (canAttack)
+                    {
+                        attacking = true;
+                    }
+                }
+                if (Input.GetButtonDown("Fire2") && grounded == true)
+                {
+                    if (canBlock)
+                    {
+                        blocking = true;
+                    }
+                }
+                if (Input.GetButtonDown("Fire3") && grounded == true)
+                {
+                    if (canSpellCast)
+                    {
+                        spellcasting = true;
+                    }
+                }
             }
-        }
-        if (Input.GetButtonDown("Fire2") && grounded == true)
-        {
-            if (canBlock)
-            {
-                blocking = true;
-            }
-        }
-        if (Input.GetButtonDown("Fire3") && grounded == true)
-        {
-            if (canSpellCast)
-            {
-                spellcasting = true;
-            }
-        }
+        }  
     }
-    private void CheckSurroundings() 
+    private void CheckSurroundings()
     {
         grounded = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, whatIsGround);
     }
-    private void UpdateAnimations() 
+    private void UpdateAnimations()
     {
-        if (Input.GetAxisRaw("Horizontal") != 0 && grounded && !attacking && !blocking && !spellcasting)
+        if (pause_script.GameIsPaused == false && victory_script.victory == false && lose_script.lose == false)
         {
-            walking = true;
-            anim.SetBool("walking", walking);
-        }
-        else { walking = false; anim.SetBool("walking", walking); }
+            if (!dead)
+            {
+                if (Input.GetAxisRaw("Horizontal") != 0 && grounded && !attacking && !blocking && !spellcasting)
+                {
+                    walking = true;
+                    anim.SetBool("walking", walking);
+                }
+                else { walking = false; anim.SetBool("walking", walking); }
 
-        if (grounded == false && attacking == false) {
-            anim.SetBool("jumping", true);
+                if (grounded == false && attacking == false)
+                {
+                    anim.SetBool("jumping", true);
+                }
+                else { anim.SetBool("jumping", false); }
+
+                if (attacking == true)
+                {
+                    anim.SetBool("attacking", true);
+                }
+                else { anim.SetBool("attacking", false); }
+
+                if (blocking == true)
+                {
+                    anim.SetBool("blocking", true);
+                }
+                else { anim.SetBool("blocking", false); }
+
+                if (spellcasting == true)
+                {
+                    anim.SetBool("spellcasting", true);
+                }
+                else { anim.SetBool("spellcasting", false); }
+
+                if (dead == true)
+                {
+                    anim.SetBool("dead", true);
+                }
+                else { anim.SetBool("dead", false); }
+            }
         }
-        else { anim.SetBool("jumping", false); }
         
-        if (attacking == true )
-        {
-            anim.SetBool("attacking", true);
-        }
-        else { anim.SetBool("attacking", false); }
-
-        if (blocking == true)
-        {
-            anim.SetBool("blocking", true);
-        }
-        else { anim.SetBool("blocking", false); }
-
-        if (spellcasting == true)
-        {
-            anim.SetBool("spellcasting", true);
-        }
-        else { anim.SetBool("spellcasting", false); }
     }
     private void CheckIfCanBlock()
     {
@@ -107,7 +142,7 @@ public class PlayerController : MonoBehaviour
             canBlock = true;
         }
     }
-    private void CheckIfCanAttack() 
+    private void CheckIfCanAttack()
     {
         if (attacking)
         {
@@ -118,13 +153,14 @@ public class PlayerController : MonoBehaviour
             canAttack = true;
         }
     }
-    private void CheckIfCanJump() 
+    private void CheckIfCanJump()
     {
-        if(grounded) 
+        if (grounded)
         {
             canJump = true;
+            GetComponent<PlayerMovement>().pushed = false;
         }
-        else 
+        else
         {
             canJump = false;
         }
@@ -139,6 +175,17 @@ public class PlayerController : MonoBehaviour
         {
             canSpellCast = true;
         }
+    }
+    public void Dead()
+    {
+        Destroy(collider);
+        Destroy(this.GetComponent<Rigidbody2D>());
+        Destroy(this.GetComponent<CapsuleCollider2D>());
+    }
+    public void SelfDestroy()
+    {
+        Destroy(self);
+        lose_script.lose = true;
     }
     // Update is called once per frame
     void Update()

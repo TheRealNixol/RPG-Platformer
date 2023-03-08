@@ -8,9 +8,11 @@ public class PlayerMovement : MonoBehaviour
     private PlayerController controller;
     private SpriteRenderer sprite_render;
     public float movementSpeed = 10f;
-    private bool isFacingRight = true;
+    public bool isFacingRight = true;
     public float jumpForce = 16f;
     public float collision_direction = 3;
+
+    public bool pushed = false;
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
@@ -47,7 +49,7 @@ public class PlayerMovement : MonoBehaviour
     }
     private void Move() 
     {
-        if (!controller.attacking && !controller.blocking && !controller.spellcasting) 
+        if (!controller.attacking && !controller.blocking && !controller.spellcasting && pushed == false) 
         {
             rb.velocity = new Vector2(movementSpeed * controller.movementInputDirection, rb.velocity.y);
         }
@@ -63,6 +65,19 @@ public class PlayerMovement : MonoBehaviour
             }*/
             controller.jumping = false; 
         }
+    }
+    public void PushPlayer(Vector2 other)
+    {
+        pushed = true;
+        if (isFacingRight) 
+        {
+            rb.velocity = new Vector2(movementSpeed, 10f);
+        }
+        else
+        {
+            rb.velocity = new Vector2(-movementSpeed, 10f);
+        }
+        
     }
 
     private void Update()
